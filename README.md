@@ -1,38 +1,46 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Next.js
 
-## Getting Started
+### getStaticProps
 
-First, run the development server:
+- 새로고침하면 pre-render 된 HTML을 가져옴
+- 빌드타임에 한번만 불러오면 되는 데이터에 사용 (SSG)
+- revalidate
+  - ISR 방식을 지원하기 위해 만든 속성
+  - page만 업데이트
+  - 데이터가 바뀌면 다시 pre-render
+  - 데이터가 바뀌지 않으면 next가 pre-render를 하지 않음
+- 예시코드
+  ```tsx
+  import type { NextPage } from 'next';
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
+  interface Props {
+    data: number;
+  }
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+  // Example의 data는 아래의 getStaticProps에서 받아옴.
+  const Example: NextPage<Props> = ({ data }) => {
+    return (
+      <main>
+        <h1>getStaticProps Page</h1>
+        <p>값: {data}</p>
+      </main>
+    );
+  };
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+  export default Example;
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+  // 개발환경에서는 적용 x (사용자가 진입할 때마다 getStaticProps() 실행)
+  // 프로덕트 환경에서만 적용
+  export async function getStaticProps() {
+    const delayInSeconds = 2;
+    const data = await new Promise((resolve) =>
+      setTimeout(() => resolve(Math.random()), delayInSeconds * 1000)
+    );
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+    return {
+      props: { data },
+      // 5초마다 데이터 확인 후 갱신
+      revalidate: 5,
+    };
+  }
+  ```
